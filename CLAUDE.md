@@ -11,16 +11,21 @@ Backend toolkit for causal AI implementing Judea Pearl's causal hierarchy:
 
 ## Commands
 
+Run `make help` for all available commands. Key ones:
+
 ```bash
-uv sync                  # Install dependencies
-uv sync --group dev      # Include dev tools (pytest, mypy, ruff, pre-commit)
-uv run pytest            # Run tests
-uv run pytest -k "test_name"  # Run single test
-uv run mypy backend/     # Type check
-uv run ruff check backend/ # Lint
-uv run ruff format backend/ # Format
-uv run pre-commit run --all-files  # Run all checks (ruff + mypy)
+make install        # Install dependencies (uv sync --group dev)
+make dev            # Build and install CLI globally
+make check          # Lint + format check + type check
+make format         # Auto-fix lint and format issues
+make test           # Run tests
+
+make release-patch  # Bump patch, build, install (0.1.0 → 0.1.1)
+make release-minor  # Bump minor, build, install (0.1.0 → 0.2.0)
+make publish        # Build and publish to PyPI
 ```
+
+Single test: `uv run pytest -k "test_name"`
 
 ## CLI
 
@@ -45,24 +50,17 @@ archy graph -e Smoking Tar -e Tar Cancer --json | archy dsep Smoking Cancer -g T
 archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome --json | archy paths Treatment Outcome
 ```
 
-### Sample Graphs for Demos
+### Example Causal Structures
+
+Use `archy examples` for built-in causal structure templates:
 
 ```bash
-# Smoking → Tar → Cancer (mediation)
-archy graph -c "Smoking Tar Cancer"
-
-# Confounded treatment effect: Age confounds Treatment→Outcome
-archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome
-
-# Collider: Talent→Success←Luck (conditioning on Success opens path)
-archy graph -e Talent Success -e Luck Success
-
-# Front-door criterion: Smoking→Tar→Cancer with unmeasured Genotype
-archy graph -e Genotype Smoking -e Genotype Cancer -e Smoking Tar -e Tar Cancer
-
-# Instrumental variable: Rain→Sprinkler→Wet, Rain independent of Shoes
-archy graph -e Rain Sprinkler -e Sprinkler Wet -e Shoes Wet
+archy examples                    # List all structures
+archy examples collider           # Show details for collider
+archy examples mediator --run     # Show and render graph
 ```
+
+Available: `confounder`, `mediator`, `collider`, `frontdoor`, `instrumental`, `m-bias`
 
 ## Architecture
 
@@ -77,7 +75,7 @@ backend/
 ├── py.typed           # PEP 561 marker for type checking
 └── cli/
     ├── __init__.py    # Re-exports cli from main
-    └── main.py        # Click commands: graph, do, info, dsep, paths
+    └── main.py        # Click commands: graph, do, info, dsep, paths, examples
 ```
 
 **Data flow**: `CausalGraph` (DAG) → `IntervenedGraph` (apply do-operator) → `DoCalculus` (check rule applicability) → `StructuralCausalModel` (counterfactual computation)
@@ -88,23 +86,6 @@ backend/
 - `CausalAIService` is the stateful facade for UI integration (holds graph + SCM state)
 - All Pydantic models in `api.py` for typed request/response contracts
 
-## Versioning & Distribution
+## Versioning
 
-```bash
-uv run bump-my-version bump patch    # 0.1.0 → 0.1.1
-uv run bump-my-version bump minor    # 0.1.0 → 0.2.0
-uv run bump-my-version bump major    # 0.1.0 → 1.0.0
-uv build                             # Build wheel to dist/
-```
-
-Version is tracked in both `pyproject.toml` and `backend/__init__.py`.
-
-### Install locally built version
-
-```bash
-uv tool install . --force            # Install as global CLI tool (use --force to upgrade)
-archy --version                      # Verify installation
-
-# Or install wheel directly into another project
-uv pip install dist/archy-*.whl
-```
+Version tracked in `pyproject.toml` and `backend/__init__.py`. Use `make release-*` commands to bump, build, and install in one step. Requires clean git working directory.

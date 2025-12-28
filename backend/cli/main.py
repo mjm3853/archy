@@ -41,17 +41,19 @@ def show_welcome() -> None:
         "[dim]Causal AI toolkit - do-calculus, interventions, counterfactuals[/dim]\n"
     )
 
-    # Quick examples
+    # Quick examples with meaningful names
     console.print("[bold]Quick Start:[/bold]")
     console.print(
-        "  [green]archy graph -e X Y -e Y Z[/green]        Create a causal graph"
+        '  [green]archy graph -c "Smoking Tar Cancer"[/green]   Create a mediation chain'
     )
     console.print(
-        "  [green]archy graph -e X Y --json | archy do X[/green]  Apply intervention"
+        "  [green]archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome[/green]"
     )
     console.print(
-        "  [green]archy --help[/green]                     Show all commands\n"
+        "                                           Create a confounded graph"
     )
+    console.print("  [green]archy graph ... --json | archy do Treatment[/green]")
+    console.print("                                           Apply intervention\n")
 
     # Command summary table
     table = Table(title="Commands", show_header=True, header_style="bold")
@@ -62,10 +64,13 @@ def show_welcome() -> None:
     table.add_row("info", "Display graph information")
     table.add_row("dsep", "Check d-separation between variables")
     table.add_row("paths", "Find backdoor paths between variables")
+    table.add_row(
+        "[bold]examples[/bold]", "[bold]Show example causal structures[/bold]"
+    )
     console.print(table)
 
     console.print("\n[dim]Use --json flag to pipe between commands.[/dim]")
-    console.print("[dim]Run 'archy COMMAND --help' for command details.[/dim]\n")
+    console.print("[dim]Run 'archy examples' for causal structure templates.[/dim]\n")
 
 
 @click.group(invoke_without_command=True)
@@ -300,6 +305,150 @@ def paths(treatment: str, outcome: str) -> None:
             console.print(f"  [yellow]{'[/yellow] → [yellow]'.join(path)}[/yellow]")
     else:
         console.print("  [green]None (no confounding)[/green]")
+
+
+# Example causal structures
+CAUSAL_EXAMPLES = {
+    "confounder": {
+        "name": "Confounder (Common Cause)",
+        "description": "Age affects both Treatment choice and Outcome, creating spurious correlation",
+        "diagram": "Age → Treatment → Outcome\n  └──────────────↗",
+        "command": "archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome",
+        "insight": "Must control for Age to estimate Treatment→Outcome effect",
+    },
+    "mediator": {
+        "name": "Mediator (Causal Chain)",
+        "description": "Smoking causes Cancer through Tar deposits in lungs",
+        "diagram": "Smoking → Tar → Cancer",
+        "command": 'archy graph -c "Smoking Tar Cancer"',
+        "insight": "Tar mediates the effect; don't control for it when estimating total effect",
+    },
+    "collider": {
+        "name": "Collider (Common Effect)",
+        "description": "Both Talent and Luck affect Success; conditioning on Success creates bias",
+        "diagram": "Talent → Success ← Luck",
+        "command": "archy graph -e Talent Success -e Luck Success",
+        "insight": "Never control for a collider - it opens a spurious path between causes",
+    },
+    "frontdoor": {
+        "name": "Front-Door Criterion",
+        "description": "Unmeasured Genotype confounds Smoking→Cancer, but Tar provides front-door path",
+        "diagram": "Genotype → Smoking → Tar → Cancer\n    └──────────────────────↗",
+        "command": "archy graph -e Genotype Smoking -e Genotype Cancer -e Smoking Tar -e Tar Cancer",
+        "insight": "Can identify causal effect via Tar even with unmeasured confounding",
+    },
+    "instrumental": {
+        "name": "Instrumental Variable",
+        "description": "Price affects Demand only through Quantity (instrument for supply/demand)",
+        "diagram": "Price → Quantity → Revenue\n             ↑\n          Demand",
+        "command": "archy graph -e Price Quantity -e Quantity Revenue -e Demand Quantity -e Demand Revenue",
+        "insight": "Price is an instrument: affects Revenue only through Quantity",
+    },
+    "m-bias": {
+        "name": "M-Bias (Butterfly)",
+        "description": "Controlling for M creates bias between Treatment and Outcome",
+        "diagram": "U1 → Treatment    Outcome ← U2\n  ↘      ↓           ↑    ↙\n     →   M   ←────────",
+        "command": "archy graph -e U1 Treatment -e U1 M -e U2 Outcome -e U2 M -e Treatment Outcome",
+        "insight": "Don't control for M - it's a collider that induces bias",
+    },
+}
+
+
+@cli.command()
+@click.argument("structure", required=False)
+@click.option("--run", is_flag=True, help="Run the example command and show the graph")
+def examples(structure: Optional[str], run: bool) -> None:
+    """Show example causal structures.
+
+    \b
+    Structures:
+        confounder    - Common cause (Age→Treatment, Age→Outcome)
+        mediator      - Causal chain (Smoking→Tar→Cancer)
+        collider      - Common effect (Talent→Success←Luck)
+        frontdoor     - Front-door criterion example
+        instrumental  - Instrumental variable example
+        m-bias        - M-bias/butterfly structure
+
+    \b
+    Examples:
+        archy examples              # List all structures
+        archy examples confounder   # Show confounder details
+        archy examples mediator --run   # Show and run mediator example
+    """
+    if structure is None:
+        # List all examples
+        console.print("\n[bold cyan]Causal Structure Examples[/bold cyan]\n")
+
+        table = Table(show_header=True, header_style="bold")
+        table.add_column("Structure", style="cyan")
+        table.add_column("Description")
+        table.add_column("Pattern")
+
+        for key, ex in CAUSAL_EXAMPLES.items():
+            table.add_row(key, ex["name"], ex["diagram"].split("\n")[0])
+
+        console.print(table)
+        console.print("\n[dim]Run 'archy examples <structure>' for details[/dim]")
+        console.print(
+            "[dim]Run 'archy examples <structure> --run' to see the graph[/dim]\n"
+        )
+        return
+
+    if structure not in CAUSAL_EXAMPLES:
+        err_console.print(f"[red]Error:[/red] Unknown structure '{structure}'")
+        err_console.print(f"Available: {', '.join(CAUSAL_EXAMPLES.keys())}")
+        sys.exit(1)
+
+    ex = CAUSAL_EXAMPLES[structure]
+
+    console.print(f"\n[bold cyan]{ex['name']}[/bold cyan]\n")
+    console.print(f"[dim]{ex['description']}[/dim]\n")
+
+    console.print("[bold]Diagram:[/bold]")
+    for line in ex["diagram"].split("\n"):
+        console.print(f"  [yellow]{line}[/yellow]")
+    console.print()
+
+    console.print("[bold]Command:[/bold]")
+    console.print(f"  [green]{ex['command']}[/green]\n")
+
+    console.print("[bold]Insight:[/bold]")
+    console.print(f"  {ex['insight']}\n")
+
+    if run:
+        console.print("[bold]Graph:[/bold]")
+        # Parse and execute the command
+        import shlex
+
+        args = shlex.split(ex["command"])
+        # Remove 'archy graph' prefix
+        args = args[2:]
+
+        # Parse the arguments manually
+        edges = []
+        chains = []
+        i = 0
+        while i < len(args):
+            if args[i] in ("-e", "--edge"):
+                edges.append((args[i + 1], args[i + 2]))
+                i += 3
+            elif args[i] in ("-c", "--chain"):
+                chains.append(args[i + 1])
+                i += 2
+            else:
+                i += 1
+
+        edge_list = list(edges)
+        for chain in chains:
+            chain_nodes = chain.split()
+            for j in range(len(chain_nodes) - 1):
+                edge_list.append((chain_nodes[j], chain_nodes[j + 1]))
+
+        try:
+            g = CausalGraph(edges=edge_list)
+            _print_graph_visual(g)
+        except ValueError as e:
+            err_console.print(f"[red]Error:[/red] {e}")
 
 
 def _print_graph_visual(g: CausalGraph) -> None:

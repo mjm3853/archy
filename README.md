@@ -74,21 +74,34 @@ Unix-style commands that can be piped together:
 
 ```bash
 # Create and display a graph
-archy graph -e X Y -e Y Z
+archy graph -e Smoking Cancer                    # Single edge
+archy graph -c "Smoking Tar Cancer"              # Chain: Smoking→Tar→Cancer
+archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome  # Confounded
 
 # Pipe commands together with --json
-archy graph -e X Y -e Z Y --json | archy info
-archy graph -e X Y -e Z Y --json | archy do Y
-archy graph -e X Y -e Z Y --json | archy dsep X Z -g Y
-archy graph -e Z X -e Z Y -e X Y --json | archy paths X Y
+archy graph -e Treatment Outcome --json | archy info
+archy graph -e Treatment Outcome --json | archy do Treatment
+archy graph -e Smoking Tar -e Tar Cancer --json | archy dsep Smoking Cancer -g Tar
+archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome --json | archy paths Treatment Outcome
 ```
 
 Available commands:
-- `graph` - Create a causal graph
+- `graph` - Create a causal graph from edges or chains
 - `do` - Apply do-intervention (remove incoming edges)
 - `info` - Display graph information
 - `dsep` - Check d-separation between variables
 - `paths` - Find backdoor paths
+- `examples` - Show example causal structures (confounder, mediator, collider, etc.)
+
+### Example Causal Structures
+
+```bash
+archy examples                    # List all structures
+archy examples collider           # Show details
+archy examples mediator --run     # Show and render graph
+```
+
+Available: `confounder`, `mediator`, `collider`, `frontdoor`, `instrumental`, `m-bias`
 
 ## Examples
 
@@ -101,50 +114,37 @@ uv run python examples/basic_usage.py
 ## Development
 
 ```bash
-uv run pytest                        # Run tests
-uv run pytest -k "test_name"         # Run single test
-uv run mypy backend/                 # Type check
-uv run ruff check backend/           # Lint
-uv run ruff format backend/          # Format
-uv run pre-commit run --all-files    # Run all checks
+make install        # Install dependencies
+make dev            # Build and install CLI globally
+make check          # Lint + format check + type check
+make format         # Auto-fix lint and format issues
+make test           # Run tests
+
+# Single test
+uv run pytest -k "test_name"
 ```
 
 ## Versioning & Release
 
-Uses [SemVer](https://semver.org/) with `bump-my-version`:
+Uses [SemVer](https://semver.org/). Release commands bump version, build, and install globally:
 
 ```bash
-uv run bump-my-version bump patch    # 0.1.0 → 0.1.1
-uv run bump-my-version bump minor    # 0.1.0 → 0.2.0
-uv run bump-my-version bump major    # 0.1.0 → 1.0.0
+make release-patch  # 0.1.0 → 0.1.1
+make release-minor  # 0.1.0 → 0.2.0
+make release-major  # 0.1.0 → 1.0.0
+make publish        # Build and publish to PyPI
 ```
 
-This updates `pyproject.toml` and `backend/__init__.py`, commits, and creates a git tag.
-
-## Distribution
-
-```bash
-# Build package
-uv build
-
-# Install globally as a tool
-uv tool install .
-
-# Install from git
-uv pip install git+https://github.com/USER/archy.git
-
-# Publish to PyPI (when ready)
-uv publish
-```
+Version tracked in `pyproject.toml` and `backend/__init__.py`. Requires clean git working directory.
 
 ## Architecture
 
-- `backend/graph.py`: Causal graph representation and DAG operations
-- `backend/interventions.py`: Intervention operations (do-calculus)
-- `backend/do_calculus.py`: Do-calculus rules implementation
-- `backend/counterfactuals.py`: Structural causal models and counterfactual reasoning
-- `backend/api.py`: High-level API service for UI integration
-- `backend/cli/`: Click-based CLI with rich terminal output
+- `backend/graph.py`: CausalGraph - DAG representation, d-separation
+- `backend/interventions.py`: Intervention, IntervenedGraph - do-operator
+- `backend/do_calculus.py`: DoCalculus - Rules 1-3 for causal expressions
+- `backend/counterfactuals.py`: StructuralCausalModel - SCM-based counterfactuals
+- `backend/api.py`: CausalAIService + Pydantic models for UI integration
+- `backend/cli/`: Click-based CLI (graph, do, info, dsep, paths, examples)
 
 ## Theory
 
