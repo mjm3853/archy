@@ -1,6 +1,6 @@
 """Archy: A backend toolkit for causal AI concepts."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from backend.counterfactuals import StructuralCausalModel, StructuralEquation
 from backend.do_calculus import DoCalculus
