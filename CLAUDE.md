@@ -31,7 +31,7 @@ uv run archy             # Show welcome and commands
 
 # Basic graph creation
 archy graph -e Smoking Cancer                    # Single edge
-archy graph -c Smoking Tar Cancer                # Chain: Smoking→Tar→Cancer
+archy graph -c "Smoking Tar Cancer"              # Chain: Smoking→Tar→Cancer
 archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome  # Confounded
 
 # Pipe commands with --json
@@ -49,7 +49,7 @@ archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome --json | archy 
 
 ```bash
 # Smoking → Tar → Cancer (mediation)
-archy graph -c Smoking Tar Cancer
+archy graph -c "Smoking Tar Cancer"
 
 # Confounded treatment effect: Age confounds Treatment→Outcome
 archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome
@@ -88,13 +88,23 @@ backend/
 - `CausalAIService` is the stateful facade for UI integration (holds graph + SCM state)
 - All Pydantic models in `api.py` for typed request/response contracts
 
-## Versioning
+## Versioning & Distribution
 
 ```bash
 uv run bump-my-version bump patch    # 0.1.0 → 0.1.1
 uv run bump-my-version bump minor    # 0.1.0 → 0.2.0
 uv run bump-my-version bump major    # 0.1.0 → 1.0.0
-uv build                             # Build wheel
+uv build                             # Build wheel to dist/
 ```
 
 Version is tracked in both `pyproject.toml` and `backend/__init__.py`.
+
+### Install locally built version
+
+```bash
+uv tool install . --force            # Install as global CLI tool (use --force to upgrade)
+archy --version                      # Verify installation
+
+# Or install wheel directly into another project
+uv pip install dist/archy-*.whl
+```

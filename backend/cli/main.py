@@ -92,25 +92,60 @@ def cli(ctx: click.Context) -> None:
     "-e", "--edge", "edges", nargs=2, multiple=True, help="Add edge: -e FROM TO"
 )
 @click.option(
-    "-c", "--chain", "chains", multiple=True, help="Add chain: -c A B C (creates A→B→C)"
+    "-c",
+    "--chain",
+    "chains",
+    multiple=True,
+    help='Add chain: -c "A B C" (creates A→B→C) - use quotes!',
 )
 @click.option("-n", "--node", "nodes", multiple=True, help="Add isolated node")
 @click.option("--json", "as_json", is_flag=True, help="Output as JSON for piping")
-def graph(edges: tuple, chains: tuple, nodes: tuple, as_json: bool) -> None:
+@click.argument("extra_args", nargs=-1)
+def graph(
+    edges: tuple, chains: tuple, nodes: tuple, as_json: bool, extra_args: tuple
+) -> None:
     """Create a causal graph.
 
     \b
     Examples:
-        archy graph -e X Y -e Y Z         # Two edges
-        archy graph -c X Y Z              # Chain: X→Y→Z
-        archy graph -c A B C -e D B       # Chain + edge
+        archy graph -e X Y -e Y Z           # Two edges
+        archy graph -c "X Y Z"              # Chain: X→Y→Z (use quotes!)
+        archy graph -c "A B C" -e D B       # Chain + edge
         archy graph -e X Y --json | archy info
     """
+    # Check for common mistake: unquoted chain arguments
+    if extra_args and chains:
+        err_console.print(
+            f"[red]Error:[/red] Unexpected arguments: {' '.join(extra_args)}\n"
+        )
+        err_console.print(
+            "[yellow]Hint:[/yellow] The -c/--chain option requires quotes around the node list:"
+        )
+        err_console.print(
+            f'  [green]archy graph -c "{chains[0]} {" ".join(extra_args)}"[/green]\n'
+        )
+        sys.exit(1)
+    elif extra_args:
+        err_console.print(
+            f"[red]Error:[/red] Unexpected arguments: {' '.join(extra_args)}\n"
+        )
+        err_console.print("Use -e for edges or -c for chains. See 'archy graph --help'")
+        sys.exit(1)
+
     edge_list = [(e[0], e[1]) for e in edges]
 
     # Parse chains into edges
     for chain in chains:
         chain_nodes = chain.split()
+        if len(chain_nodes) < 2:
+            err_console.print(
+                f"[red]Error:[/red] Chain '{chain}' needs at least 2 nodes.\n"
+            )
+            err_console.print(
+                "[yellow]Hint:[/yellow] Use quotes around multiple nodes:"
+            )
+            err_console.print('  [green]archy graph -c "A B C"[/green]')
+            sys.exit(1)
         for i in range(len(chain_nodes) - 1):
             edge_list.append((chain_nodes[i], chain_nodes[i + 1]))
 
