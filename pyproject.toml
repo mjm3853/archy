@@ -1,0 +1,26 @@
+[project]
+name = "archy"
+version = "0.1.0"
+description = "Backend toolkit for causal AI: do-calculus, counterfactuals, and interventions"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "networkx",
+    "numpy",
+    "pandas",
+    "scipy",
+    "pydantic",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "mypy",
+    "ruff",
+    "types-networkx>=3.6.1.20251220",
+    "pre-commit>=4.5.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
