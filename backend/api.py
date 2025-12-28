@@ -9,14 +9,14 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from archy.counterfactuals import (
+from backend.counterfactuals import (
     StructuralCausalModel,
     StructuralEquation,
     StructuralFunction,
 )
-from archy.do_calculus import DoCalculus
-from archy.graph import CausalGraph
-from archy.interventions import IntervenedGraph
+from backend.do_calculus import DoCalculus
+from backend.graph import CausalGraph
+from backend.interventions import IntervenedGraph
 
 
 class GraphRequest(BaseModel):

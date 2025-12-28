@@ -13,35 +13,88 @@ Backend toolkit for causal AI implementing Judea Pearl's causal hierarchy:
 
 ```bash
 uv sync                  # Install dependencies
-uv sync --group dev      # Include dev tools
+uv sync --group dev      # Include dev tools (pytest, mypy, ruff, pre-commit)
 uv run pytest            # Run tests
 uv run pytest -k "test_name"  # Run single test
-uv run mypy archy/       # Type check
-uv run ruff check archy/ # Lint
-uv run ruff format archy/ # Format
-uv run python examples/basic_usage.py  # Run example
+uv run mypy backend/     # Type check
+uv run ruff check backend/ # Lint
+uv run ruff format backend/ # Format
+uv run pre-commit run --all-files  # Run all checks (ruff + mypy)
+```
 
-# Pre-commit hooks (run all checks)
-uv run pre-commit run --all-files
+## CLI
+
+Unix-style commands, pipeable via JSON:
+
+```bash
+uv run archy             # Show welcome and commands
+
+# Basic graph creation
+archy graph -e Smoking Cancer                    # Single edge
+archy graph -c Smoking Tar Cancer                # Chain: Smoking→Tar→Cancer
+archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome  # Confounded
+
+# Pipe commands with --json
+archy graph -e Treatment Outcome --json | archy info
+archy graph -e Treatment Outcome --json | archy do Treatment
+
+# D-separation (conditional independence)
+archy graph -e Smoking Tar -e Tar Cancer --json | archy dsep Smoking Cancer -g Tar
+
+# Find backdoor paths (confounding)
+archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome --json | archy paths Treatment Outcome
+```
+
+### Sample Graphs for Demos
+
+```bash
+# Smoking → Tar → Cancer (mediation)
+archy graph -c Smoking Tar Cancer
+
+# Confounded treatment effect: Age confounds Treatment→Outcome
+archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome
+
+# Collider: Talent→Success←Luck (conditioning on Success opens path)
+archy graph -e Talent Success -e Luck Success
+
+# Front-door criterion: Smoking→Tar→Cancer with unmeasured Genotype
+archy graph -e Genotype Smoking -e Genotype Cancer -e Smoking Tar -e Tar Cancer
+
+# Instrumental variable: Rain→Sprinkler→Wet, Rain independent of Shoes
+archy graph -e Rain Sprinkler -e Sprinkler Wet -e Shoes Wet
 ```
 
 ## Architecture
 
 ```
-archy/
-├── graph.py          # CausalGraph: DAG representation using networkx, d-separation
-├── interventions.py  # Intervention, IntervenedGraph: do-operator implementation
-├── do_calculus.py    # DoCalculus: Rules 1-3 for manipulating causal expressions
-├── counterfactuals.py # StructuralCausalModel, StructuralEquation: SCM-based counterfactuals
-└── api.py            # CausalAIService: Pydantic request/response models for UI integration
+backend/
+├── __init__.py        # Public API exports: CausalGraph, DoCalculus, etc.
+├── graph.py           # CausalGraph: DAG via networkx, d-separation
+├── interventions.py   # Intervention, IntervenedGraph: do-operator
+├── do_calculus.py     # DoCalculus: Rules 1-3 for causal expressions
+├── counterfactuals.py # StructuralCausalModel, StructuralEquation
+├── api.py             # CausalAIService + Pydantic request/response models
+├── py.typed           # PEP 561 marker for type checking
+└── cli/
+    ├── __init__.py    # Re-exports cli from main
+    └── main.py        # Click commands: graph, do, info, dsep, paths
 ```
 
-**Core flow**: `CausalGraph` → apply `Intervention` → use `DoCalculus` rules → compute counterfactuals via `StructuralCausalModel`
+**Data flow**: `CausalGraph` (DAG) → `IntervenedGraph` (apply do-operator) → `DoCalculus` (check rule applicability) → `StructuralCausalModel` (counterfactual computation)
 
-**Key classes**:
-- `CausalGraph`: Wraps networkx DiGraph, enforces DAG constraint, provides d-separation
-- `CausalAIService`: Stateful service holding graph/SCM, exposes Pydantic-typed methods for frontend consumption
+**Key patterns**:
+- `CausalGraph.from_dict()` / `to_dict()` for JSON serialization (enables CLI piping)
+- `IntervenedGraph` creates modified graph copy, doesn't mutate original
+- `CausalAIService` is the stateful facade for UI integration (holds graph + SCM state)
+- All Pydantic models in `api.py` for typed request/response contracts
 
-## Maintenance
+## Versioning
 
-After significant changes, update README.md to keep documentation in sync. Run `/init` periodically to refresh this file.
+```bash
+uv run bump-my-version bump patch    # 0.1.0 → 0.1.1
+uv run bump-my-version bump minor    # 0.1.0 → 0.2.0
+uv run bump-my-version bump major    # 0.1.0 → 1.0.0
+uv build                             # Build wheel
+```
+
+Version is tracked in both `pyproject.toml` and `backend/__init__.py`.

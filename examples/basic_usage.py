@@ -1,9 +1,9 @@
 """Basic usage examples for the Archy causal AI toolkit."""
 
-from archy import CausalGraph
-from archy.api import CausalAIService, GraphRequest, InterventionRequest
-from archy.do_calculus import DoCalculus
-from archy.counterfactuals import StructuralCausalModel, StructuralEquation
+from backend import CausalGraph
+from backend.api import CausalAIService, GraphRequest, InterventionRequest
+from backend.do_calculus import DoCalculus
+from backend.counterfactuals import StructuralCausalModel, StructuralEquation
 
 
 def example_basic_graph():
@@ -40,7 +40,7 @@ def example_intervention():
     print(f"Original graph edges: {graph.get_edges()}")
 
     # Apply intervention do(Y)
-    from archy.interventions import IntervenedGraph
+    from backend.interventions import IntervenedGraph
 
     intervened = IntervenedGraph(graph, {"Y"})
 

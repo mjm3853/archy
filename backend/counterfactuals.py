@@ -11,7 +11,7 @@ from typing import Callable, Optional
 
 from pydantic import BaseModel
 
-from archy.graph import CausalGraph
+from backend.graph import CausalGraph
 
 # Type alias for structural equation functions: f(parent_values, error) -> value
 StructuralFunction = Callable[[list[float], float], float]

@@ -10,6 +10,8 @@ dependencies = [
     "pandas",
     "scipy",
     "pydantic",
+    "click>=8.1.0,<8.2.2",
+    "rich>=14.2.0",
 ]
 
 [dependency-groups]
@@ -19,8 +21,34 @@ dev = [
     "ruff",
     "types-networkx>=3.6.1.20251220",
     "pre-commit>=4.5.1",
+    "bump-my-version>=1.2.2",
 ]
+
+[project.scripts]
+archy = "backend.cli:cli"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend"]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.bumpversion]
+current_version = "0.1.0"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+serialize = ["{major}.{minor}.{patch}"]
+commit = true
+tag = true
+tag_name = "v{new_version}"
+message = "Release v{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "backend/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'

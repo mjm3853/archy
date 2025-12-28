@@ -8,7 +8,7 @@ import networkx as nx
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
-    from archy.graph import CausalGraph
+    from backend.graph import CausalGraph
 
 
 class Intervention(BaseModel):

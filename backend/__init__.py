@@ -2,10 +2,10 @@
 
 __version__ = "0.1.0"
 
-from archy.counterfactuals import StructuralCausalModel, StructuralEquation
-from archy.do_calculus import DoCalculus
-from archy.graph import CausalGraph
-from archy.interventions import IntervenedGraph, Intervention
+from backend.counterfactuals import StructuralCausalModel, StructuralEquation
+from backend.do_calculus import DoCalculus
+from backend.graph import CausalGraph
+from backend.interventions import IntervenedGraph, Intervention
 
 __all__ = [
     "CausalGraph",

@@ -10,8 +10,8 @@ from typing import Optional, Set
 
 import networkx as nx
 
-from archy.graph import CausalGraph
-from archy.interventions import IntervenedGraph
+from backend.graph import CausalGraph
+from backend.interventions import IntervenedGraph
 
 
 class DoCalculus:

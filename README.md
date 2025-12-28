@@ -14,8 +14,12 @@ Archy provides a Python backend for working with causal inference concepts, desi
 ## Installation
 
 ```bash
-uv sync                  # Install dependencies
+uv sync                  # Install dependencies and CLI
 uv sync --group dev      # Include dev tools (pytest, mypy, ruff, pre-commit)
+
+# Run CLI
+uv run archy             # Recommended
+. .venv/bin/activate && archy  # Or activate venv first
 ```
 
 ## Quick Start
@@ -23,7 +27,7 @@ uv sync --group dev      # Include dev tools (pytest, mypy, ruff, pre-commit)
 ### Basic Causal Graph
 
 ```python
-from archy import CausalGraph
+from backend import CausalGraph
 
 # Create a causal graph: X -> Y <- Z
 graph = CausalGraph(edges=[("X", "Y"), ("Z", "Y")])
@@ -39,7 +43,7 @@ is_d_sep = graph.is_d_separated({"X"}, {"Z"}, {"Y"})
 ### Interventions
 
 ```python
-from archy.interventions import IntervenedGraph
+from backend.interventions import IntervenedGraph
 
 # Apply intervention do(Y)
 intervened = IntervenedGraph(graph, {"Y"})
@@ -51,7 +55,7 @@ print(intervened.get_parents("Y"))  # set()
 ### API Service (for UI Integration)
 
 ```python
-from archy.api import CausalAIService, GraphRequest, InterventionRequest
+from backend.api import CausalAIService, GraphRequest, InterventionRequest
 
 service = CausalAIService()
 
@@ -64,11 +68,32 @@ intervention_request = InterventionRequest(variable="Treatment", value=1.0)
 intervention_response = service.apply_intervention(intervention_request)
 ```
 
+## CLI
+
+Unix-style commands that can be piped together:
+
+```bash
+# Create and display a graph
+archy graph -e X Y -e Y Z
+
+# Pipe commands together with --json
+archy graph -e X Y -e Z Y --json | archy info
+archy graph -e X Y -e Z Y --json | archy do Y
+archy graph -e X Y -e Z Y --json | archy dsep X Z -g Y
+archy graph -e Z X -e Z Y -e X Y --json | archy paths X Y
+```
+
+Available commands:
+- `graph` - Create a causal graph
+- `do` - Apply do-intervention (remove incoming edges)
+- `info` - Display graph information
+- `dsep` - Check d-separation between variables
+- `paths` - Find backdoor paths
+
 ## Examples
 
 See `examples/basic_usage.py` for comprehensive examples of all features.
 
-Run examples:
 ```bash
 uv run python examples/basic_usage.py
 ```
@@ -78,19 +103,48 @@ uv run python examples/basic_usage.py
 ```bash
 uv run pytest                        # Run tests
 uv run pytest -k "test_name"         # Run single test
-uv run mypy archy/                   # Type check
-uv run ruff check archy/             # Lint
-uv run ruff format archy/            # Format
-uv run pre-commit run --all-files    # Run all checks (ruff + mypy)
+uv run mypy backend/                 # Type check
+uv run ruff check backend/           # Lint
+uv run ruff format backend/          # Format
+uv run pre-commit run --all-files    # Run all checks
+```
+
+## Versioning & Release
+
+Uses [SemVer](https://semver.org/) with `bump-my-version`:
+
+```bash
+uv run bump-my-version bump patch    # 0.1.0 → 0.1.1
+uv run bump-my-version bump minor    # 0.1.0 → 0.2.0
+uv run bump-my-version bump major    # 0.1.0 → 1.0.0
+```
+
+This updates `pyproject.toml` and `backend/__init__.py`, commits, and creates a git tag.
+
+## Distribution
+
+```bash
+# Build package
+uv build
+
+# Install globally as a tool
+uv tool install .
+
+# Install from git
+uv pip install git+https://github.com/USER/archy.git
+
+# Publish to PyPI (when ready)
+uv publish
 ```
 
 ## Architecture
 
-- `archy/graph.py`: Causal graph representation and DAG operations
-- `archy/interventions.py`: Intervention operations (do-calculus)
-- `archy/do_calculus.py`: Do-calculus rules implementation
-- `archy/counterfactuals.py`: Structural causal models and counterfactual reasoning
-- `archy/api.py`: High-level API service for UI integration
+- `backend/graph.py`: Causal graph representation and DAG operations
+- `backend/interventions.py`: Intervention operations (do-calculus)
+- `backend/do_calculus.py`: Do-calculus rules implementation
+- `backend/counterfactuals.py`: Structural causal models and counterfactual reasoning
+- `backend/api.py`: High-level API service for UI integration
+- `backend/cli/`: Click-based CLI with rich terminal output
 
 ## Theory
 
@@ -115,6 +169,7 @@ This toolkit implements concepts from Judea Pearl's causal hierarchy:
 - `numpy`, `pandas`: Data handling
 - `scipy`: Statistical functions
 - `pydantic`: Data validation
+- `click`, `rich`: CLI and terminal output
 
 ## License
 
