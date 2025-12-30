@@ -7,6 +7,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from backend.graph import CausalGraph
+from backend.rendering import render_graph_ascii
 from backend.tutorial.models import (
     CausalLevel,
     Lesson,
@@ -105,7 +106,7 @@ def render_response(response: TutorialResponse) -> None:
 
 
 def render_graph(graph: Optional[CausalGraph]) -> None:
-    """Render current graph state as Pearl-style ASCII diagram."""
+    """Render current graph state using the shared renderer."""
     if not graph:
         console.print("[dim]No graph yet.[/dim]")
         return
@@ -117,178 +118,9 @@ def render_graph(graph: Optional[CausalGraph]) -> None:
         return
 
     console.print()
-
-    # Build ASCII diagram
-    diagram = _build_ascii_diagram(graph)
+    diagram = render_graph_ascii(graph, use_rich=True)
     console.print(Panel(diagram, title="[bold]Causal Graph[/bold]", border_style="dim"))
     console.print()
-
-
-def _build_ascii_diagram(graph: CausalGraph) -> str:
-    """Build Pearl-style ASCII diagram of the graph."""
-    nodes = graph.get_nodes()
-    edges = graph.get_edges()
-
-    if not edges:
-        # Just isolated nodes
-        return "  ".join(f"[cyan]({n})[/cyan]" for n in sorted(nodes))
-
-    # Identify layers (topological ordering)
-    layers = _get_layers(graph)
-    edge_set = set(edges)
-
-    # Build the diagram
-    lines = []
-
-    # Track which edges we've shown
-    shown_edges: set[tuple[str, str]] = set()
-
-    # Draw nodes layer by layer with arrows between
-    for i, layer in enumerate(layers):
-        # Node line - center single nodes under multi-node layers
-        node_line = "    ".join(f"[cyan]({n})[/cyan]" for n in layer)
-
-        # Calculate leading spaces for alignment
-        if i > 0 and len(layer) == 1 and len(layers[i - 1]) == 2:
-            # Single node under two parents - center it
-            # Two nodes: "  (X)    (Z)" = 12 chars display width
-            # Single node "(Y)" = 3 chars, center at position ~4-5
-            lines.append(f"    {node_line}")
-        elif i > 0 and len(layer) == 2 and len(layers[i - 1]) == 1:
-            # Two nodes under single parent - keep standard spacing
-            lines.append(f"  {node_line}")
-        else:
-            lines.append(f"  {node_line}")
-
-        # Arrow lines to next layer
-        if i < len(layers) - 1:
-            arrow_lines, new_shown = _draw_arrows_with_tracking(
-                layer, layers[i + 1], edge_set
-            )
-            shown_edges.update(new_shown)
-            lines.extend(arrow_lines)
-
-    # Show any edges that weren't displayed (cross-layer edges)
-    missing_edges = edge_set - shown_edges
-    if missing_edges:
-        lines.append("")
-        lines.append(
-            "[dim]Also:[/dim] "
-            + ", ".join(f"[yellow]{p}→{c}[/yellow]" for p, c in sorted(missing_edges))
-        )
-
-    return "\n".join(lines)
-
-
-def _draw_arrows_with_tracking(
-    from_layer: list[str], to_layer: list[str], edges: set[tuple[str, str]]
-) -> tuple[list[str], set[tuple[str, str]]]:
-    """Draw arrows and return which edges were shown."""
-    shown: set[tuple[str, str]] = set()
-    lines: list[str] = []
-
-    # Find which edges connect these layers
-    connections = []
-    for f in from_layer:
-        for t in to_layer:
-            if (f, t) in edges:
-                connections.append((f, t))
-                shown.add((f, t))
-
-    if not connections:
-        return [""], shown
-
-    # Check for diagonal arrows (cross connections)
-    has_diagonal = any(
-        from_layer.index(f) != to_layer.index(t) if t in to_layer else False
-        for f, t in connections
-        if f in from_layer
-    )
-
-    if has_diagonal and len(from_layer) <= 3 and len(to_layer) <= 3:
-        lines.append(_draw_diagonal_arrows(from_layer, to_layer, edges))
-    else:
-        # Simple vertical arrows
-        arrow_parts = []
-        for f in from_layer:
-            has_child = any((f, t) in edges for t in to_layer)
-            arrow_parts.append("   ↓   " if has_child else "       ")
-        lines.append("".join(arrow_parts))
-
-    return lines, shown
-
-
-def _get_layers(graph: CausalGraph) -> list[list[str]]:
-    """Get nodes organized into layers (roots first, then children, etc.)."""
-    nodes = set(graph.get_nodes())
-    layers = []
-    placed = set()
-
-    # First layer: roots (no parents)
-    roots = [n for n in nodes if not graph.get_parents(n)]
-    if roots:
-        layers.append(sorted(roots))
-        placed.update(roots)
-    elif nodes:
-        # No roots (cycle?), just pick first alphabetically
-        first = sorted(nodes)[0]
-        layers.append([first])
-        placed.add(first)
-
-    # Subsequent layers: nodes whose parents are all placed
-    while placed != nodes:
-        next_layer = []
-        for n in nodes - placed:
-            parents = graph.get_parents(n)
-            if parents <= placed:  # All parents are placed
-                next_layer.append(n)
-
-        if next_layer:
-            layers.append(sorted(next_layer))
-            placed.update(next_layer)
-        else:
-            # Remaining nodes have unplaceable dependencies, add them
-            remaining = sorted(nodes - placed)
-            layers.append(remaining)
-            placed.update(remaining)
-
-    return layers
-
-
-def _draw_diagonal_arrows(
-    from_layer: list[str], to_layer: list[str], edges: set
-) -> str:
-    """Draw diagonal arrows for fork/collider patterns."""
-    # Common patterns:
-    # Fork (confounder): one node pointing to multiple in next layer
-    # Collider: multiple nodes pointing to one in next layer
-
-    # Node format: (X) = 3 chars, separated by 4 spaces
-    # Layout: "  (X)    (Z)" -> 2 leading + 3 node + 4 gap + 3 node
-
-    if len(from_layer) == 1 and len(to_layer) == 2:
-        # Fork pattern: Z -> X, Z -> Y
-        f = from_layer[0]
-        if (f, to_layer[0]) in edges and (f, to_layer[1]) in edges:
-            # Center the arrows under the single parent, spreading to children
-            return "   ↙ ↘"
-
-    if len(from_layer) == 2 and len(to_layer) == 1:
-        # Collider pattern: X -> Z, Y -> Z
-        t = to_layer[0]
-        if (from_layer[0], t) in edges and (from_layer[1], t) in edges:
-            # Arrows from each parent converging to center
-            return "   ↘ ↙"
-
-    if len(from_layer) == 1 and len(to_layer) == 1:
-        return "   ↓"
-
-    # Mixed - just show vertical arrows
-    arrows = []
-    for f in from_layer:
-        has_child = any((f, t) in edges for t in to_layer)
-        arrows.append("  ↓  " if has_child else "     ")
-    return "".join(arrows)
 
 
 def render_lesson_complete(lesson: Lesson) -> None:

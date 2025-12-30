@@ -6,6 +6,7 @@ from backend.counterfactuals import StructuralCausalModel, StructuralEquation
 from backend.do_calculus import DoCalculus
 from backend.graph import CausalGraph
 from backend.interventions import IntervenedGraph, Intervention
+from backend.rendering import render_graph_ascii
 
 __all__ = [
     "CausalGraph",
@@ -14,4 +15,5 @@ __all__ = [
     "Intervention",
     "StructuralCausalModel",
     "StructuralEquation",
+    "render_graph_ascii",
 ]
