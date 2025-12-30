@@ -126,16 +126,17 @@ uv run pytest -k "test_name"
 
 ## Versioning & Release
 
-Uses [SemVer](https://semver.org/). Release commands bump version, build, and install globally:
+Uses [SemVer](https://semver.org/). See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ```bash
+make version        # Show current version
 make release-patch  # 0.1.0 → 0.1.1
 make release-minor  # 0.1.0 → 0.2.0
 make release-major  # 0.1.0 → 1.0.0
 make publish        # Build and publish to PyPI
 ```
 
-Version tracked in `pyproject.toml` and `backend/__init__.py`. Requires clean git working directory.
+**Release process**: Update `CHANGELOG.md` → run `make release-*` → push with tags.
 
 ## Architecture
 
