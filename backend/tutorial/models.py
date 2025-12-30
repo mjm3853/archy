@@ -46,6 +46,7 @@ class TutorialStep:
     hint: str  # Help if user is stuck
     expected_action: StepAction  # What type of action to validate
     expected_args: dict = field(default_factory=dict)  # Arguments for validation
+    example: str = ""  # Example command shown below prompt
     explanation: str = ""  # Why this matters (shown after success)
     validator: Optional[Callable] = None  # Custom validation function
 

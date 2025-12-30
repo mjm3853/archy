@@ -24,6 +24,7 @@ LESSON_GRAPH_BASICS = Lesson(
             hint="Type: add edge X Y",
             expected_action=StepAction.ADD_EDGE,
             expected_args={"parent": "X", "child": "Y"},
+            example="add edge X Y",
             explanation="An arrow X -> Y means X has a causal effect on Y.",
         ),
         TutorialStep(
@@ -32,6 +33,7 @@ LESSON_GRAPH_BASICS = Lesson(
             hint="Type: add edge Z Y",
             expected_action=StepAction.ADD_EDGE,
             expected_args={"parent": "Z", "child": "Y"},
+            example="add edge Z Y",
             explanation="Y now has two parents: X and Z. Both cause Y.",
         ),
         TutorialStep(
@@ -40,6 +42,7 @@ LESSON_GRAPH_BASICS = Lesson(
             hint="Type: parents Y",
             expected_action=StepAction.SHOW_GRAPH,
             expected_args={"query": "parents", "node": "Y"},
+            example="parents Y",
             explanation="Parents are direct causes. Y has parents {X, Z}.",
         ),
         TutorialStep(
@@ -48,6 +51,7 @@ LESSON_GRAPH_BASICS = Lesson(
             hint="Type: dsep X Z",
             expected_action=StepAction.CHECK_DSEP,
             expected_args={"x": "X", "y": "Z", "given": []},
+            example="dsep X Z",
             explanation="X and Z are d-separated because they have no connecting path (except through their common child Y).",
         ),
     ],
@@ -67,6 +71,7 @@ LESSON_CONFOUNDER = Lesson(
             hint="Type: add edge Age Treatment",
             expected_action=StepAction.ADD_EDGE,
             expected_args={"parent": "Age", "child": "Treatment"},
+            example="add edge Age Treatment",
             explanation="Older patients might prefer different treatments.",
         ),
         TutorialStep(
@@ -75,6 +80,7 @@ LESSON_CONFOUNDER = Lesson(
             hint="Type: add edge Age Outcome",
             expected_action=StepAction.ADD_EDGE,
             expected_args={"parent": "Age", "child": "Outcome"},
+            example="add edge Age Outcome",
             explanation="Age independently affects health outcomes.",
         ),
         TutorialStep(
@@ -83,6 +89,7 @@ LESSON_CONFOUNDER = Lesson(
             hint="Type: add edge Treatment Outcome",
             expected_action=StepAction.ADD_EDGE,
             expected_args={"parent": "Treatment", "child": "Outcome"},
+            example="add edge Treatment Outcome",
             explanation="This is the causal effect we want to estimate!",
         ),
         TutorialStep(
@@ -91,6 +98,7 @@ LESSON_CONFOUNDER = Lesson(
             hint="Type: dsep Treatment Outcome",
             expected_action=StepAction.CHECK_DSEP,
             expected_args={"x": "Treatment", "y": "Outcome", "given": []},
+            example="dsep Treatment Outcome",
             explanation="They're NOT d-separated! There's a backdoor path through Age.",
         ),
         TutorialStep(
@@ -99,6 +107,7 @@ LESSON_CONFOUNDER = Lesson(
             hint="Type: paths Treatment Outcome",
             expected_action=StepAction.CHECK_PATHS,
             expected_args={"treatment": "Treatment", "outcome": "Outcome"},
+            example="paths Treatment Outcome",
             explanation="The path Treatment <- Age -> Outcome is a backdoor path (confounding).",
         ),
         TutorialStep(
@@ -107,6 +116,7 @@ LESSON_CONFOUNDER = Lesson(
             hint="Type: dsep Treatment Outcome given Age",
             expected_action=StepAction.CHECK_DSEP,
             expected_args={"x": "Treatment", "y": "Outcome", "given": ["Age"]},
+            example="dsep Treatment Outcome given Age",
             explanation="Controlling for Age blocks the backdoor path. Now we can estimate the true causal effect of Treatment on Outcome!",
         ),
     ],
@@ -126,6 +136,7 @@ LESSON_MEDIATOR = Lesson(
             hint="Type: add edge Smoking Tar",
             expected_action=StepAction.ADD_EDGE,
             expected_args={"parent": "Smoking", "child": "Tar"},
+            example="add edge Smoking Tar",
             explanation="Smoking leads to tar deposits in the lungs.",
         ),
         TutorialStep(
@@ -134,6 +145,7 @@ LESSON_MEDIATOR = Lesson(
             hint="Type: add edge Tar Cancer",
             expected_action=StepAction.ADD_EDGE,
             expected_args={"parent": "Tar", "child": "Cancer"},
+            example="add edge Tar Cancer",
             explanation="Tar buildup is carcinogenic.",
         ),
         TutorialStep(
@@ -142,6 +154,7 @@ LESSON_MEDIATOR = Lesson(
             hint="Type: dsep Smoking Cancer",
             expected_action=StepAction.CHECK_DSEP,
             expected_args={"x": "Smoking", "y": "Cancer", "given": []},
+            example="dsep Smoking Cancer",
             explanation="They're NOT d-separated - Smoking affects Cancer through Tar.",
         ),
         TutorialStep(
@@ -150,6 +163,7 @@ LESSON_MEDIATOR = Lesson(
             hint="Type: dsep Smoking Cancer given Tar",
             expected_action=StepAction.CHECK_DSEP,
             expected_args={"x": "Smoking", "y": "Cancer", "given": ["Tar"]},
+            example="dsep Smoking Cancer given Tar",
             explanation="Now they ARE d-separated! Conditioning on a mediator blocks the causal path. WARNING: Don't control for mediators when estimating total effects!",
         ),
     ],
@@ -169,6 +183,7 @@ LESSON_COLLIDER = Lesson(
             hint="Type: add edge Talent Success",
             expected_action=StepAction.ADD_EDGE,
             expected_args={"parent": "Talent", "child": "Success"},
+            example="add edge Talent Success",
             explanation="Talented people are more likely to succeed.",
         ),
         TutorialStep(
@@ -177,6 +192,7 @@ LESSON_COLLIDER = Lesson(
             hint="Type: add edge Luck Success",
             expected_action=StepAction.ADD_EDGE,
             expected_args={"parent": "Luck", "child": "Success"},
+            example="add edge Luck Success",
             explanation="Lucky people also succeed (right place, right time).",
         ),
         TutorialStep(
@@ -185,6 +201,7 @@ LESSON_COLLIDER = Lesson(
             hint="Type: dsep Talent Luck",
             expected_action=StepAction.CHECK_DSEP,
             expected_args={"x": "Talent", "y": "Luck", "given": []},
+            example="dsep Talent Luck",
             explanation="Yes! Talent and Luck are independent - no causal connection.",
         ),
         TutorialStep(
@@ -193,6 +210,7 @@ LESSON_COLLIDER = Lesson(
             hint="Type: dsep Talent Luck given Success",
             expected_action=StepAction.CHECK_DSEP,
             expected_args={"x": "Talent", "y": "Luck", "given": ["Success"]},
+            example="dsep Talent Luck given Success",
             explanation="Now they're DEPENDENT! Conditioning on a collider OPENS a path. Among successful people, less talent implies more luck (and vice versa). This is 'selection bias' or 'Berkson's paradox'.",
         ),
     ],

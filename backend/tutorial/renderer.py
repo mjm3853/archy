@@ -92,6 +92,8 @@ def render_step(step: TutorialStep, step_num: int, total_steps: int) -> None:
     console.print(f"[cyan]{step.instruction}[/cyan]")
     console.print()
     console.print(f"[bold white]{step.prompt}[/bold white]")
+    if step.example:
+        console.print(f"[dim]Example: [green]{step.example}[/green][/dim]")
     console.print()
 
 
