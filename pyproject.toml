@@ -1,6 +1,6 @@
 [project]
 name = "archy"
-version = "0.1.5.dev1"
+version = "0.1.5.dev2"
 description = "Backend toolkit for causal AI: do-calculus, counterfactuals, and interventions"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -35,7 +35,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.bumpversion]
-current_version = "0.1.5.dev1"
+current_version = "0.1.5.dev2"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(\\.(?P<dev>dev\\d+))?"
 serialize = [
     "{major}.{minor}.{patch}.{dev}",
