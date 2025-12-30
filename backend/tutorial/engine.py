@@ -4,6 +4,7 @@ import re
 from typing import Optional
 
 from backend.graph import CausalGraph
+from backend.interventions import IntervenedGraph
 from backend.tutorial.models import (
     Lesson,
     StepAction,
@@ -241,6 +242,23 @@ class TutorialEngine:
                         f"  {i + 1}. {p}" for i, p in enumerate(path_strs)
                     )
                 return TutorialResponse(success=True, message=msg)
+
+            elif action == StepAction.APPLY_DO:
+                variables = set(args.get("variables", []))
+                if not variables:
+                    return TutorialResponse(
+                        success=False, message="Specify variable(s) to intervene on."
+                    )
+                # Apply intervention - this removes incoming edges to intervened vars
+                intervened = IntervenedGraph(self.graph, variables)
+                # Create new CausalGraph from intervened edges
+                self.graph = CausalGraph(edges=intervened.get_edges())
+                var_str = ", ".join(sorted(variables))
+                return TutorialResponse(
+                    success=True,
+                    message=f"Applied do({var_str}). Incoming edges removed.",
+                    show_graph=True,
+                )
 
             elif action == StepAction.SHOW_GRAPH:
                 if args.get("query") == "parents":

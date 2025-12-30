@@ -43,7 +43,7 @@ def render_lesson_list(lessons: list[Lesson]) -> None:
     table.add_column("ID", style="cyan")
     table.add_column("Title", style="white")
     table.add_column("Level", style="green")
-    table.add_column("Type", style="yellow")
+    table.add_column("Requires", style="dim")
 
     for lesson in lessons:
         level_str = {
@@ -52,9 +52,9 @@ def render_lesson_list(lessons: list[Lesson]) -> None:
             CausalLevel.COUNTERFACTUAL: "[red]3: Counterfactual[/red]",
         }.get(lesson.level, str(lesson.level))
 
-        type_str = lesson.causal_type.value if lesson.causal_type else "-"
+        prereq_str = ", ".join(lesson.prerequisites) if lesson.prerequisites else "-"
 
-        table.add_row(lesson.id, lesson.title, level_str, type_str)
+        table.add_row(lesson.id, lesson.title, level_str, prereq_str)
 
     console.print(table)
     console.print()
