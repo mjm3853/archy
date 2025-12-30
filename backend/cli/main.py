@@ -12,6 +12,9 @@ from rich.table import Table
 from rich.tree import Tree
 
 from backend import CausalGraph, IntervenedGraph
+from backend.tutorial import TutorialEngine
+from backend.tutorial.content import get_all_lessons
+from backend.tutorial import renderer as tutorial_renderer
 
 console = Console()
 err_console = Console(stderr=True)
@@ -64,13 +67,12 @@ def show_welcome() -> None:
     table.add_row("info", "Display graph information")
     table.add_row("dsep", "Check d-separation between variables")
     table.add_row("paths", "Find backdoor paths between variables")
-    table.add_row(
-        "[bold]examples[/bold]", "[bold]Show example causal structures[/bold]"
-    )
+    table.add_row("examples", "Show example causal structures")
+    table.add_row("[bold]learn[/bold]", "[bold]Interactive tutorial[/bold]")
     console.print(table)
 
     console.print("\n[dim]Use --json flag to pipe between commands.[/dim]")
-    console.print("[dim]Run 'archy examples' for causal structure templates.[/dim]\n")
+    console.print("[dim]Run 'archy learn' for interactive tutorial.[/dim]\n")
 
 
 @click.group(invoke_without_command=True)
@@ -509,6 +511,88 @@ def _print_graph_info(g: CausalGraph) -> None:
         console.print("\n[bold]Edges:[/bold]")
         for parent, child in edges:
             console.print(f"  {parent} → {child}")
+
+
+@cli.command()
+@click.argument("lesson", required=False)
+@click.option("--list", "show_list", is_flag=True, help="List available lessons")
+@click.option("--help-commands", is_flag=True, help="Show tutorial commands")
+def learn(lesson: Optional[str], show_list: bool, help_commands: bool) -> None:
+    """Interactive tutorial for learning causal inference.
+
+    \b
+    Start guided lessons to learn:
+      - Level 1: Causal graphs and d-separation
+      - Level 2: Interventions and do-calculus
+      - Level 3: Counterfactuals and SCMs
+
+    \b
+    Examples:
+        archy learn              # Show welcome and lesson list
+        archy learn --list       # List all lessons
+        archy learn graph-basics # Start specific lesson
+        archy learn confounder   # Learn about confounders
+    """
+    # Initialize engine with all lessons
+    engine = TutorialEngine()
+    for lesson_obj in get_all_lessons():
+        engine.register_lesson(lesson_obj)
+
+    # Show commands help
+    if help_commands:
+        tutorial_renderer.render_commands_help()
+        return
+
+    # List lessons
+    if show_list or lesson is None:
+        tutorial_renderer.render_welcome()
+        tutorial_renderer.render_lesson_list(engine.list_lessons())
+        return
+
+    # Start specific lesson
+    if not engine.start_lesson(lesson):
+        err_console.print(f"[red]Error:[/red] Unknown lesson '{lesson}'")
+        err_console.print(
+            f"Available: {', '.join(ls.id for ls in engine.list_lessons())}"
+        )
+        sys.exit(1)
+
+    current_lesson = engine.current_lesson
+    if not current_lesson:
+        return
+
+    tutorial_renderer.render_lesson_start(current_lesson)
+
+    # Interactive loop
+    while True:
+        step = engine.get_current_step()
+        if not step:
+            # Lesson complete
+            tutorial_renderer.render_lesson_complete(current_lesson)
+            break
+
+        # Show current step
+        total_steps = len(current_lesson.steps)
+        step_num = (engine.state.step_index if engine.state else 0) + 1
+        tutorial_renderer.render_step(step, step_num, total_steps)
+
+        # Get user input
+        user_input = tutorial_renderer.get_prompt()
+
+        if user_input.lower() in ("quit", "exit", "q"):
+            console.print("[dim]Tutorial paused.[/dim]")
+            break
+
+        if user_input.lower() == "help":
+            tutorial_renderer.render_commands_help()
+            continue
+
+        # Process input
+        response = engine.handle_input(user_input)
+        tutorial_renderer.render_response(response)
+
+        if response.show_graph:
+            tutorial_renderer.render_graph(engine.graph)
 
 
 if __name__ == "__main__":

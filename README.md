@@ -86,6 +86,7 @@ archy graph -e Age Treatment -e Age Outcome -e Treatment Outcome --json | archy 
 ```
 
 Available commands:
+
 - `graph` - Create a causal graph from edges or chains
 - `do` - Apply do-intervention (remove incoming edges)
 - `info` - Display graph information
