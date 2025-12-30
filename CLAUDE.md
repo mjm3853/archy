@@ -81,23 +81,37 @@ archy examples mediator --run     # Show and render graph
 
 Available: `confounder`, `mediator`, `collider`, `frontdoor`, `instrumental`, `m-bias`
 
-## Architecture
+### Interactive Tutorial
+
+Learn causal inference step-by-step with `archy learn`:
 
 ```bash
+archy learn --list              # List all 10 lessons
+archy learn graph-basics        # Start a lesson
+archy learn do-operator         # Level 2: interventions
+archy learn counterfactual-steps # Level 3: counterfactuals
+```
+
+Tutorial commands: `add edge X Y`, `dsep X Y given Z`, `paths X Y`, `do X`, `show`, `hint`, `skip`
+
+## Architecture
+
+```
 backend/
-├── __init__.py        # Public API exports: CausalGraph, DoCalculus, etc.
+├── __init__.py        # Public API exports: CausalGraph, DoCalculus, render_graph_ascii
 ├── graph.py           # CausalGraph: DAG via networkx, d-separation
 ├── interventions.py   # Intervention, IntervenedGraph: do-operator
 ├── do_calculus.py     # DoCalculus: Rules 1-3 for causal expressions
 ├── counterfactuals.py # StructuralCausalModel, StructuralEquation
+├── rendering.py       # Reusable ASCII graph rendering (pattern-aware)
 ├── api.py             # CausalAIService + Pydantic request/response models
-├── py.typed           # PEP 561 marker for type checking
-└── cli/
-    ├── __init__.py    # Re-exports cli from main
-    └── main.py        # Click commands: graph, do, info, dsep, paths, examples
-
-examples/
-└── basic_usage.py     # Comprehensive examples of all features
+├── cli/
+│   └── main.py        # Click commands: graph, do, info, dsep, paths, examples, learn
+└── tutorial/          # Interactive learning system
+    ├── models.py      # Lesson, TutorialStep, TutorialState dataclasses
+    ├── engine.py      # TutorialEngine: manages flow, validates input
+    ├── content.py     # 10 lessons across 3 causal hierarchy levels
+    └── renderer.py    # Rich terminal rendering for tutorial UI
 ```
 
 **Data flow**: `CausalGraph` (DAG) → `IntervenedGraph` (apply do-operator) → `DoCalculus` (check rule applicability) → `StructuralCausalModel` (counterfactual computation)
@@ -110,6 +124,12 @@ examples/
 - All Pydantic models in `api.py` for typed request/response contracts
 - Graph operations maintain DAG invariant (adding cycles raises `ValueError`)
 - D-separation implemented via networkx's `d_separated()` function
+
+**Tutorial system**:
+
+- `TutorialEngine` manages lesson state and validates user commands
+- Lessons defined as dataclasses in `content.py` with `StepAction` enum for expected actions
+- `render_graph_ascii()` in `rendering.py` auto-detects patterns (chain, fork, collider) for clean display
 
 **Python API Usage**:
 
