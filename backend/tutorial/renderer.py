@@ -145,9 +145,20 @@ def _build_ascii_diagram(graph: CausalGraph) -> str:
 
     # Draw nodes layer by layer with arrows between
     for i, layer in enumerate(layers):
-        # Node line
+        # Node line - center single nodes under multi-node layers
         node_line = "    ".join(f"[cyan]({n})[/cyan]" for n in layer)
-        lines.append(f"  {node_line}")
+
+        # Calculate leading spaces for alignment
+        if i > 0 and len(layer) == 1 and len(layers[i - 1]) == 2:
+            # Single node under two parents - center it
+            # Two nodes: "  (X)    (Z)" = 12 chars display width
+            # Single node "(Y)" = 3 chars, center at position ~4-5
+            lines.append(f"    {node_line}")
+        elif i > 0 and len(layer) == 2 and len(layers[i - 1]) == 1:
+            # Two nodes under single parent - keep standard spacing
+            lines.append(f"  {node_line}")
+        else:
+            lines.append(f"  {node_line}")
 
         # Arrow lines to next layer
         if i < len(layers) - 1:
@@ -244,53 +255,6 @@ def _get_layers(graph: CausalGraph) -> list[list[str]]:
     return layers
 
 
-def _draw_arrows(
-    from_layer: list[str], to_layer: list[str], edges: set, graph: CausalGraph
-) -> list[str]:
-    """Draw arrows between two layers."""
-    lines = []
-
-    # Find which edges connect these layers
-    connections = []
-    for f in from_layer:
-        for t in to_layer:
-            if (f, t) in edges:
-                connections.append((f, t))
-
-    if not connections:
-        return [""]
-
-    # Simple arrow representation
-    # For each node in from_layer, show arrows to its children in to_layer
-    arrow_parts = []
-    for f in from_layer:
-        children_in_next = [t for t in to_layer if (f, t) in edges]
-        if len(children_in_next) == 1:
-            arrow_parts.append("   ↓   ")
-        elif len(children_in_next) > 1:
-            arrow_parts.append("  ↓ ↓  ")
-        elif any((p, f) in edges for p in to_layer):
-            # This node receives from next layer (shouldn't happen in DAG)
-            arrow_parts.append("   ↑   ")
-        else:
-            arrow_parts.append("       ")
-
-    # Check for diagonal arrows (cross connections)
-    has_diagonal = False
-    for i, f in enumerate(from_layer):
-        for j, t in enumerate(to_layer):
-            if (f, t) in edges and i != j:
-                has_diagonal = True
-
-    if has_diagonal and len(from_layer) <= 3 and len(to_layer) <= 3:
-        # Try to show diagonal arrows for small graphs
-        lines.append(_draw_diagonal_arrows(from_layer, to_layer, edges))
-    else:
-        lines.append("".join(arrow_parts))
-
-    return lines
-
-
 def _draw_diagonal_arrows(
     from_layer: list[str], to_layer: list[str], edges: set
 ) -> str:
@@ -299,20 +263,25 @@ def _draw_diagonal_arrows(
     # Fork (confounder): one node pointing to multiple in next layer
     # Collider: multiple nodes pointing to one in next layer
 
+    # Node format: (X) = 3 chars, separated by 4 spaces
+    # Layout: "  (X)    (Z)" -> 2 leading + 3 node + 4 gap + 3 node
+
     if len(from_layer) == 1 and len(to_layer) == 2:
         # Fork pattern: Z -> X, Z -> Y
         f = from_layer[0]
         if (f, to_layer[0]) in edges and (f, to_layer[1]) in edges:
-            return "    ↙   ↘"
+            # Center the arrows under the single parent, spreading to children
+            return "   ↙ ↘"
 
     if len(from_layer) == 2 and len(to_layer) == 1:
         # Collider pattern: X -> Z, Y -> Z
         t = to_layer[0]
         if (from_layer[0], t) in edges and (from_layer[1], t) in edges:
-            return "    ↘   ↙"
+            # Arrows from each parent converging to center
+            return "   ↘ ↙"
 
     if len(from_layer) == 1 and len(to_layer) == 1:
-        return "      ↓"
+        return "   ↓"
 
     # Mixed - just show vertical arrows
     arrows = []
