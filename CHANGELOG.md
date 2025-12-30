@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2024-12-30
+
+### Added
+- **Interactive Tutorial System** (`archy learn`) - Learn causal inference step-by-step
+  - 10 lessons across Pearl's 3-level causal hierarchy
+  - Level 1 (Association): graph-basics, confounder, mediator, collider
+  - Level 2 (Intervention): do-operator, backdoor, frontdoor
+  - Level 3 (Counterfactual): scm-intro, counterfactual-steps, ett-vs-ate
+- Tutorial engine with structured commands (`add edge`, `dsep`, `paths`, `do`)
+- `do` command implementation using `IntervenedGraph`
+- Prerequisite tracking and learning path guidance
+- Reusable graph rendering module (`backend/rendering.py`)
+  - Pattern-aware ASCII rendering (chain, fork, collider detection)
+  - Horizontal layouts for simple graphs
+  - Layered display for complex graphs
+- Dev versioning workflow (`make dev-start`, `make dev-bump`)
+
+### Changed
+- Graph visualization uses simpler horizontal format: `X → Y ← Z`
+- Lesson list shows prerequisites for progression guidance
+
 ## [0.1.4] - 2024-12-30
 
 ### Added
@@ -45,7 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CausalAIService` API for UI integration
 - Pydantic models for typed request/response contracts
 
-[Unreleased]: https://github.com/mjm3853/archy/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/mjm3853/archy/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/mjm3853/archy/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/mjm3853/archy/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/mjm3853/archy/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/mjm3853/archy/compare/v0.1.1...v0.1.2
