@@ -22,11 +22,16 @@ make check          # Lint + format check + type check (ruff + mypy)
 make format         # Auto-fix lint and format issues
 make test           # Run all tests (pytest)
 
-# Release
+# Versioning
 make version        # Show current version
-make release-patch  # Bump patch, build, install (0.1.0 → 0.1.1)
-make release-minor  # Bump minor, build, install (0.1.0 → 0.2.0)
-make release-major  # Bump major, build, install (0.1.0 → 1.0.0)
+make dev-start      # Start dev version (0.1.4 → 0.1.5.dev0)
+make dev-bump       # Bump dev version (0.1.5.dev0 → 0.1.5.dev1)
+make release        # Finalize release (0.1.5.dev0 → 0.1.5)
+
+# Direct releases (from stable, skipping dev cycle)
+make release-patch  # Bump patch (0.1.4 → 0.1.5)
+make release-minor  # Bump minor (0.1.4 → 0.2.0)
+make release-major  # Bump major (0.1.4 → 1.0.0)
 make publish        # Build and publish to PyPI
 
 # Other
@@ -131,12 +136,30 @@ For UI integration, use `CausalAIService` from `backend.api` with Pydantic reque
 
 ## Versioning
 
-Version tracked in `pyproject.toml` and `backend/__init__.py`. Use `make release-*` commands to bump, build, and install in one step. Requires clean git working directory.
+Version tracked in `pyproject.toml` and `backend/__init__.py`. Uses PEP 440 with dev versions for work-in-progress.
 
-**Release process**:
+**Development workflow** (recommended for new features):
 
-1. Update `CHANGELOG.md` with changes under `[Unreleased]`
-2. Run `make release-patch` (or minor/major) — prompts for changelog confirmation
-3. Push with `git push && git push --tags`
+```bash
+# 1. Start dev cycle after a release
+make dev-start      # 0.1.4 → 0.1.5.dev0
 
-**Version sync**: `bump-my-version` automatically updates both files and creates a git tag (configured in `pyproject.toml`).
+# 2. Work on features, rebuild as needed
+make dev            # Build and install current dev version
+
+# 3. Optionally bump dev number for checkpoints
+make dev-bump       # 0.1.5.dev0 → 0.1.5.dev1
+
+# 4. When ready, finalize the release
+# First update CHANGELOG.md, then:
+make release        # 0.1.5.dev0 → 0.1.5 (tags and commits)
+git push && git push --tags
+```
+
+**Direct release** (small fixes, skip dev cycle):
+
+```bash
+make release-patch  # 0.1.4 → 0.1.5 (requires clean git, not in dev mode)
+```
+
+**Version sync**: `bump-my-version` automatically updates both `pyproject.toml` and `backend/__init__.py`.

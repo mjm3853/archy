@@ -1,6 +1,6 @@
 [project]
 name = "archy"
-version = "0.1.4"
+version = "0.1.5.dev0"
 description = "Backend toolkit for causal AI: do-calculus, counterfactuals, and interventions"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -35,13 +35,23 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.bumpversion]
-current_version = "0.1.4"
-parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
-serialize = ["{major}.{minor}.{patch}"]
+current_version = "0.1.5.dev0"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(\\.(?P<dev>dev\\d+))?"
+serialize = [
+    "{major}.{minor}.{patch}.{dev}",
+    "{major}.{minor}.{patch}",
+]
 commit = true
-tag = true
+tag = false  # Don't tag dev versions by default
 tag_name = "v{new_version}"
-message = "Release v{new_version}"
+message = "Bump to {new_version}"
+
+[tool.bumpversion.parts.dev]
+# Dev versions: dev0, dev1, dev2, ...
+# When absent, we're in release mode
+optional_value = ""
+first_value = "dev0"
+values = ["dev0", "dev1", "dev2", "dev3", "dev4", "dev5", "dev6", "dev7", "dev8", "dev9"]
 
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"

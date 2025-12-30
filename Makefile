@@ -1,4 +1,5 @@
-.PHONY: help install dev check format test build release-patch release-minor release-major publish clean version
+.PHONY: help install dev check format test build version clean
+.PHONY: dev-start dev-bump release-patch release-minor release-major release publish
 
 # Default target
 help:
@@ -11,11 +12,16 @@ help:
 	@echo "  make format     - Auto-fix linting and formatting issues"
 	@echo "  make test       - Run tests"
 	@echo ""
-	@echo "Release:"
-	@echo "  make version        - Show current version"
-	@echo "  make release-patch  - Bump patch version, build, install (0.1.0 → 0.1.1)"
-	@echo "  make release-minor  - Bump minor version, build, install (0.1.0 → 0.2.0)"
-	@echo "  make release-major  - Bump major version, build, install (0.1.0 → 1.0.0)"
+	@echo "Versioning:"
+	@echo "  make version    - Show current version"
+	@echo "  make dev-start  - Start dev version (0.1.4 → 0.1.5.dev0)"
+	@echo "  make dev-bump   - Bump dev version (0.1.5.dev0 → 0.1.5.dev1)"
+	@echo "  make release    - Finalize release (0.1.5.dev0 → 0.1.5)"
+	@echo ""
+	@echo "Release (from stable version):"
+	@echo "  make release-patch  - Bump patch (0.1.4 → 0.1.5)"
+	@echo "  make release-minor  - Bump minor (0.1.4 → 0.2.0)"
+	@echo "  make release-major  - Bump major (0.1.4 → 1.0.0)"
 	@echo "  make publish        - Build and publish to PyPI"
 	@echo ""
 	@echo "Utilities:"
@@ -52,22 +58,70 @@ build:
 version:
 	@grep 'version = ' pyproject.toml | head -1 | cut -d'"' -f2
 
-# Release (bump version + build + install)
+# Development versioning (work in progress)
+# Start a new dev cycle: 0.1.4 → 0.1.5.dev0
+dev-start:
+	@if grep -q "\.dev" pyproject.toml; then \
+		echo "Already in dev mode. Use 'make dev-bump' or 'make release'."; \
+		exit 1; \
+	fi
+	uv run bump-my-version bump patch  # 0.1.4 → 0.1.5
+	uv run bump-my-version bump dev    # 0.1.5 → 0.1.5.dev0
+	@$(MAKE) dev
+	@echo ""
+	@echo "Now in dev mode: $$(make version)"
+
+# Bump dev version: 0.1.5.dev0 → 0.1.5.dev1
+dev-bump:
+	@if ! grep -q "\.dev" pyproject.toml; then \
+		echo "Not in dev mode. Use 'make dev-start' first."; \
+		exit 1; \
+	fi
+	uv run bump-my-version bump dev
+	@$(MAKE) dev
+	@echo ""
+	@echo "Dev version bumped: $$(make version)"
+
+# Finalize release: 0.1.5.dev0 → 0.1.5 (removes dev suffix, tags, and commits)
+release: _ensure-clean _check-changelog
+	@if ! grep -q "\.dev" pyproject.toml; then \
+		echo "Not in dev mode. Use release-patch/minor/major for direct releases."; \
+		exit 1; \
+	fi
+	uv run bump-my-version bump dev --tag --tag-message "Release v{new_version}"
+	@$(MAKE) dev
+	@echo ""
+	@echo "Released: $$(make version)"
+	@echo "Don't forget to: git push && git push --tags"
+
+# Direct releases (from stable version, skipping dev cycle)
 # Remember to update CHANGELOG.md before releasing!
 release-patch: _ensure-clean _check-changelog
-	uv run bump-my-version bump patch
+	@if grep -q "\.dev" pyproject.toml; then \
+		echo "In dev mode. Use 'make release' to finalize, or manually reset version."; \
+		exit 1; \
+	fi
+	uv run bump-my-version bump patch --tag --tag-message "Release v{new_version}"
 	@$(MAKE) dev
 	@echo ""
 	@echo "Don't forget to: git push && git push --tags"
 
 release-minor: _ensure-clean _check-changelog
-	uv run bump-my-version bump minor
+	@if grep -q "\.dev" pyproject.toml; then \
+		echo "In dev mode. Use 'make release' to finalize, or manually reset version."; \
+		exit 1; \
+	fi
+	uv run bump-my-version bump minor --tag --tag-message "Release v{new_version}"
 	@$(MAKE) dev
 	@echo ""
 	@echo "Don't forget to: git push && git push --tags"
 
 release-major: _ensure-clean _check-changelog
-	uv run bump-my-version bump major
+	@if grep -q "\.dev" pyproject.toml; then \
+		echo "In dev mode. Use 'make release' to finalize, or manually reset version."; \
+		exit 1; \
+	fi
+	uv run bump-my-version bump major --tag --tag-message "Release v{new_version}"
 	@$(MAKE) dev
 	@echo ""
 	@echo "Don't forget to: git push && git push --tags"
