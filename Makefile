@@ -88,7 +88,8 @@ release: _ensure-clean _check-changelog
 		echo "Not in dev mode. Use release-patch/minor/major for direct releases."; \
 		exit 1; \
 	fi
-	uv run bump-my-version bump dev --tag --tag-message "Release v{new_version}"
+	uv run bump-my-version bump dev
+	@$(MAKE) _tag-with-notes
 	@$(MAKE) dev
 	@echo ""
 	@echo "Released: $$(make version)"
@@ -101,7 +102,8 @@ release-patch: _ensure-clean _check-changelog
 		echo "In dev mode. Use 'make release' to finalize, or manually reset version."; \
 		exit 1; \
 	fi
-	uv run bump-my-version bump patch --tag --tag-message "Release v{new_version}"
+	uv run bump-my-version bump patch
+	@$(MAKE) _tag-with-notes
 	@$(MAKE) dev
 	@echo ""
 	@echo "Don't forget to: git push && git push --tags"
@@ -111,7 +113,8 @@ release-minor: _ensure-clean _check-changelog
 		echo "In dev mode. Use 'make release' to finalize, or manually reset version."; \
 		exit 1; \
 	fi
-	uv run bump-my-version bump minor --tag --tag-message "Release v{new_version}"
+	uv run bump-my-version bump minor
+	@$(MAKE) _tag-with-notes
 	@$(MAKE) dev
 	@echo ""
 	@echo "Don't forget to: git push && git push --tags"
@@ -121,7 +124,8 @@ release-major: _ensure-clean _check-changelog
 		echo "In dev mode. Use 'make release' to finalize, or manually reset version."; \
 		exit 1; \
 	fi
-	uv run bump-my-version bump major --tag --tag-message "Release v{new_version}"
+	uv run bump-my-version bump major
+	@$(MAKE) _tag-with-notes
 	@$(MAKE) dev
 	@echo ""
 	@echo "Don't forget to: git push && git push --tags"
@@ -150,3 +154,22 @@ _check-changelog:
 	fi
 	@echo "Reminder: Update CHANGELOG.md with changes for this release."
 	@read -p "Continue with release? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
+
+# Internal: extract release notes for a version from CHANGELOG.md
+# Usage: $(call get-release-notes,0.1.5)
+define get-release-notes
+$(shell awk '/^## \[$(1)\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md)
+endef
+
+# Internal: create annotated tag with release notes from CHANGELOG.md
+# Args: version
+_tag-with-notes:
+	@version=$$(grep 'version = ' pyproject.toml | head -1 | cut -d'"' -f2); \
+	notes=$$(awk "/^## \[$$version\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md); \
+	if [ -z "$$notes" ]; then \
+		echo "Warning: No release notes found for v$$version in CHANGELOG.md"; \
+		git tag -a "v$$version" -m "Release v$$version"; \
+	else \
+		printf "Release v$$version\n\n$$notes" | git tag -a "v$$version" -F -; \
+	fi; \
+	echo "Created tag v$$version with release notes"
